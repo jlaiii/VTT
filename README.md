@@ -1,42 +1,129 @@
-# VTT (Voice-To-Text) Automation Engine
+# 🎙️ VTT — Voice to Text Engine
 
-An asynchronous Python application powered by the Google Speech Recognition API, designed to convert real-time vocal input into automated keyboard strokes. This project focuses on high-precision transcription and seamless integration with the operating system's input layer.
+<p align="center">
+  <img src="https://img.shields.io/badge/Python-3.11-blue?style=flat&logo=python" alt="Python">
+  <img src="https://img.shields.io/badge/Platform-Windows-0078D6?style=flat&logo=windows" alt="Windows">
+  <img src="https://img.shields.io/badge/License-MIT-green?style=flat" alt="MIT">
+  <img src="https://img.shields.io/badge/Speech-Google_API-orange?style=flat&logo=google" alt="Google Speech">
+</p>
 
----
+**VTT** is a lightweight Windows desktop app that transcribes your voice into keystrokes in real time — no cloud subscriptions, no accounts, just talk and it types. Perfect for anyone who wants hands-free text input in any application.
 
-## Overview
-VTT is a specialized utility that bridges the gap between speech recognition and desktop automation. By utilizing the Google Web Speech API and the pyautogui library, the application allows for hands-free text entry into any active software environment.
-
-### Core Functionalities
-* **Google-Powered Transcription**: Leverages Google's speech-to-text engine for high-accuracy vocal analysis.
-* **Asynchronous Audio Processing**: Employs Python threading and queue management to handle concurrent audio capture and text processing without UI latency.
-* **Dynamic Deduplication**: Implements a sequence matching algorithm via the difflib library to filter redundant phrases and improve transcription clarity.
-* **Intelligent Auto-Submit**: Features a configurable "Auto-Enter" logic that triggers a return key command after a specified duration of silence.
-* **Persistent Configuration**: Automatically tracks and stores user preferences, including window coordinates and hardware sensitivity, in a local JSON schema.
+> Powered by Google's Speech Recognition API. Built with performance and simplicity in mind.
 
 ---
 
-## Technical Architecture
-* **Speech Engine**: Utilizes the SpeechRecognition library specifically configured for Google's recognition services.
-* **Interface**: Developed using customtkinter for a high-DPI, modern graphical user interface.
-* **Audio Engineering**: Uses sounddevice and numpy for low-latency signal processing and audio buffering.
-* **Automation**: Utilizes pyautogui for direct OS-level character injection.
+## ✨ Features
+
+- **Real-time voice typing** — speak naturally and watch words appear wherever your cursor is
+- **Smart deduplication** — filters out repeated words and stutters automatically
+- **Auto-Enter** — configurable delay to press Enter after you finish speaking
+- **Always on Top** — keep VTT visible over any window
+- **Custom hotkeys** — bind any key combo to toggle the engine on/off
+- **Auto-pip install** — missing dependencies are installed automatically on first launch
+- **Detailed system logs** — full diagnostics for troubleshooting
+- **Persistent settings** — everything saves between sessions
 
 ---
 
-## Configuration Details
-| Parameter | Function |
-| :--- | :--- |
-| Typing Speed | Controls the interval between injected characters to ensure compatibility with target applications. |
-| Mic Sensitivity | Adjusts the energy threshold for the Google recognizer to account for background noise. |
-| Idle Auto-Stop | A safety feature that deactivates the engine after a period of inactivity to conserve system resources. |
-| System Logs | A real-time debug window providing transparency into the audio processing and recognition pipeline. |
+## 🚀 Quick Start
+
+### Requirements
+
+- **Windows 10/11**
+- **Python 3.10+** — [Download](https://python.org/downloads)
+- A microphone
+
+### Install & Run
+
+```bash
+git clone https://github.com/jlaiii/VTT.git
+cd VTT
+pip install -r requirements.txt
+python VTT.pyw
+```
+
+> **No pip install?** VTT auto-installs missing packages on first run — just launch `VTT.pyw` and it handles the rest.
+
+Double-click `VTT.pyw` to launch silently (no console window). The app runs as a compact floating window.
 
 ---
 
-## Installation and Usage
+## ⚙️ Settings
 
-1. **Clone the Repository**:
-   ```bash
-   git clone [https://github.com/YourUsername/VTT.git](https://github.com/YourUsername/VTT.git)
-   cd VTT
+| Setting | Description |
+|---|---|
+| **Typing Speed** | Delay between injected keystrokes (`0.0s` to `0.1s`) |
+| **Mic Sensitivity** | Adjust for quiet rooms vs noisy environments (`Low`/`Medium`/`High`) |
+| **Auto-Enter Delay** | Wait time before auto-pressing Enter (`3s` to `1m`) |
+| **Idle Auto-Stop** | Auto-shutoff if no speech detected (`10s` to `Never`) |
+| **Always on Top** | Keep VTT above all other windows |
+| **Toggle Hotkey** | Bind a keyboard shortcut to start/stop the engine |
+
+---
+
+## 🔧 Tech Stack
+
+```
+customtkinter    → Modern dark-themed GUI
+SpeechRecognition → Google Web Speech API integration
+PyAudio/PortAudio → Low-latency microphone capture via sounddevice
+NumPy + SciPy    → Audio signal processing
+PyAutoGUI        → OS-level keystroke injection
+keyboard         → Global hotkey registration
+```
+
+---
+
+## 🏗️ How It Works
+
+VTT uses a multi-threaded architecture:
+
+1. **Audio Capture** — streams mic input at 16kHz into a ring buffer
+2. **Speech Processing** — feeds 1.8s audio windows to Google's recognition API with 0.6s overlap for continuity
+3. **Deduplication** — difflib sequence matching filters already-sent words
+4. **Keystroke Injection** — PyAutoGUI types cleaned text into the active window
+
+The UI remains responsive because all heavy work runs on background daemon threads.
+
+---
+
+## 📁 Project Structure
+
+```
+VTT/
+├── VTT.pyw              # Main application (double-click to run)
+├── vtt_settings.json     # Auto-generated user preferences
+└── README.md
+```
+
+---
+
+## 🛠️ Development
+
+```bash
+# Install dev dependencies
+pip install -r requirements.txt
+
+# Run (debug console)
+python VTT.pyw
+```
+
+To compile to a standalone `.exe`:
+
+```bash
+pip install pyinstaller
+pyinstaller --noconsole --onefile --icon="icon.ico" VTT.pyw
+```
+
+---
+
+## 🤝 Contributing
+
+Found a bug or have an idea? Open an [issue](https://github.com/jlaiii/VTT/issues) or submit a pull request.
+
+---
+
+<div align="center">
+  <sub>Made with ❤️ by <a href="https://github.com/jlaiii">jlaiii</a></sub>
+</div>
