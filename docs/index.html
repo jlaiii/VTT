@@ -5,243 +5,446 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>VTT — Voice to Text Engine</title>
   <meta name="description" content="A lightweight Windows desktop app that transcribes speech into keystrokes in real time. Powered by Google's Speech Recognition API.">
-  <meta name="theme-color" content="#1a1a2e">
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎙️</text></svg>">
+  <meta name="theme-color" content="#0a0a14">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
-      --bg: #0f0f1a;
-      --card: #1a1a2e;
+      --bg: #0a0a14;
+      --surface: rgba(18, 18, 34, 0.85);
+      --surface-solid: #12122a;
       --accent: #7c3aed;
       --accent2: #a78bfa;
-      --text: #e2e8f0;
-      --muted: #94a3b8;
-      --success: #22c55e;
-      --border: #1e293b;
-      --gradient: linear-gradient(135deg, #7c3aed 0%, #3b82f6 50%, #06b6d4 100%);
+      --text: #e8ecf1;
+      --muted: #8892a4;
+      --border: rgba(255, 255, 255, 0.06);
+      --glow: rgba(124, 58, 237, 0.15);
     }
     html { scroll-behavior: smooth; }
     body {
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
       background: var(--bg);
       color: var(--text);
       line-height: 1.6;
       overflow-x: hidden;
     }
+
+    canvas#bgCanvas {
+      position: fixed; top: 0; left: 0;
+      width: 100%; height: 100%;
+      z-index: 0;
+      pointer-events: none;
+    }
+
     .hero {
-      position: relative;
+      position: relative; z-index: 1;
       min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      text-align: center;
-      padding: 2rem;
-      overflow: hidden;
+      display: flex; align-items: center; justify-content: center;
+      text-align: center; padding: 2rem;
     }
-    .hero::before {
-      content: '';
-      position: absolute; inset: 0;
-      background: radial-gradient(ellipse 80% 80% at 50% -20%, rgba(124,58,237,0.15) 0%, transparent 70%),
-                  radial-gradient(ellipse 60% 60% at 80% 80%, rgba(59,130,246,0.1) 0%, transparent 70%);
+    .hero-content { max-width: 750px; }
+    .hero-badge {
+      display: inline-block;
+      background: rgba(124, 58, 237, 0.12);
+      border: 1px solid rgba(124, 58, 237, 0.25);
+      border-radius: 100px; padding: 0.4rem 1.2rem;
+      font-size: 0.8rem; font-weight: 500;
+      color: var(--accent2); margin-bottom: 1.5rem;
+      letter-spacing: 0.04em;
     }
-    .hero-content { position: relative; z-index: 1; max-width: 800px; }
-    .hero-icon { font-size: 5rem; margin-bottom: 1rem; }
+    .hero-badge .dot {
+      display: inline-block; width: 7px; height: 7px;
+      background: #4ade80; border-radius: 50%;
+      margin-right: 0.5rem; vertical-align: middle;
+      box-shadow: 0 0 8px rgba(74, 222, 128, 0.5);
+    }
     .hero h1 {
-      font-size: clamp(2.5rem, 8vw, 5rem);
-      font-weight: 800;
-      background: var(--gradient);
+      font-size: clamp(3rem, 9vw, 5.5rem);
+      font-weight: 800; letter-spacing: -0.03em;
+      line-height: 1.05; margin-bottom: 1rem;
+      background: linear-gradient(135deg, #7c3aed 0%, #3b82f6 50%, #06b6d4 100%);
       background-clip: text; -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
-      letter-spacing: -0.03em;
-      margin-bottom: 0.5rem;
     }
-    .hero .tagline {
-      font-size: 1.25rem;
-      color: var(--muted);
-      margin-bottom: 2rem;
-      max-width: 500px;
-      margin-inline: auto;
+    .hero h1 .highlight {
+      -webkit-text-fill-color: transparent;
+      background: linear-gradient(135deg, #ffffff 0%, #c4b5fd 100%);
+      background-clip: text; -webkit-background-clip: text;
     }
+    .hero p {
+      font-size: 1.2rem; color: var(--muted);
+      max-width: 520px; margin: 0 auto 2.5rem;
+    }
+    .btn-group { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; }
     .btn {
       display: inline-flex; align-items: center; gap: 0.5rem;
-      padding: 0.875rem 2rem;
-      border-radius: 12px;
-      font-weight: 600; font-size: 1rem;
-      text-decoration: none;
-      transition: all 0.2s ease;
-      cursor: pointer; border: none;
+      padding: 0.8rem 1.8rem; border-radius: 10px;
+      font-weight: 600; font-size: 0.95rem; text-decoration: none;
+      transition: all 0.25s ease; cursor: pointer; border: none;
     }
     .btn-primary {
-      background: var(--gradient);
+      background: linear-gradient(135deg, #7c3aed 0%, #3b82f6 100%);
       color: #fff;
-      box-shadow: 0 4px 24px rgba(124,58,237,0.3);
+      box-shadow: 0 4px 20px rgba(124, 58, 237, 0.3);
     }
-    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 32px rgba(124,58,237,0.4); }
-    .btn-secondary {
-      background: var(--card); color: var(--text);
-      border: 1px solid var(--border);
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(124, 58, 237, 0.45); }
+    .btn-outline {
+      background: transparent; color: var(--text);
+      border: 1px solid rgba(255,255,255,0.15);
+      backdrop-filter: blur(8px);
     }
-    .btn-secondary:hover { background: #252540; border-color: var(--accent); }
-    .btn-group { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; }
+    .btn-outline:hover { background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.3); }
 
-    section { padding: 6rem 2rem; max-width: 1100px; margin: 0 auto; }
+    section { position: relative; z-index: 1; padding: 5rem 2rem; max-width: 1150px; margin: 0 auto; }
+    .section-label {
+      display: inline-block; font-size: 0.75rem; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.1em;
+      color: var(--accent2); margin-bottom: 0.75rem;
+    }
     section h2 {
-      font-size: 2rem; font-weight: 700;
+      font-size: 2.2rem; font-weight: 700; letter-spacing: -0.02em;
       margin-bottom: 3rem; text-align: center;
     }
-    .features { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; }
-    .feature-card {
-      background: var(--card); border: 1px solid var(--border);
-      border-radius: 16px; padding: 2rem;
-      transition: border-color 0.2s, transform 0.2s;
-    }
-    .feature-card:hover { border-color: var(--accent); transform: translateY(-4px); }
-    .feature-icon { font-size: 2rem; margin-bottom: 1rem; display: block; }
-    .feature-card h3 { font-size: 1.1rem; margin-bottom: 0.5rem; }
-    .feature-card p { color: var(--muted); font-size: 0.9rem; }
 
-    .install { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 2.5rem; }
-    .install code {
-      display: block; background: #0a0a14; border: 1px solid var(--border);
-      border-radius: 10px; padding: 1.25rem;
-      font-family: 'JetBrains Mono', 'Fira Code', monospace; font-size: 0.9rem;
-      color: #a5b4fc;
-      margin-top: 1rem; overflow-x: auto;
+    .features {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 1.25rem;
     }
-    .install code .comment { color: var(--muted); }
-    .settings-table { width: 100%; border-collapse: collapse; }
-    .settings-table th { text-align: left; color: var(--muted); font-weight: 500; padding: 0.75rem 1rem; border-bottom: 1px solid var(--border); }
-    .settings-table td { padding: 0.75rem 1rem; border-bottom: 1px solid var(--border); }
+    .feature-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 14px; padding: 2rem;
+      backdrop-filter: blur(16px);
+      transition: border-color 0.3s, transform 0.3s, box-shadow 0.3s;
+      position: relative; overflow: hidden;
+    }
+    .feature-card::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, var(--accent), transparent);
+      opacity: 0; transition: opacity 0.3s;
+    }
+    .feature-card:hover {
+      border-color: rgba(124, 58, 237, 0.3);
+      transform: translateY(-4px);
+      box-shadow: 0 16px 40px rgba(124, 58, 237, 0.08);
+    }
+    .feature-card:hover::before { opacity: 1; }
+    .feature-card .card-icon {
+      font-size: 1.5rem; margin-bottom: 1rem;
+      width: 44px; height: 44px;
+      display: flex; align-items: center; justify-content: center;
+      background: rgba(124, 58, 237, 0.1);
+      border-radius: 10px;
+    }
+    .feature-card h3 { font-size: 1.05rem; font-weight: 600; margin-bottom: 0.5rem; }
+    .feature-card p { color: var(--muted); font-size: 0.9rem; line-height: 1.5; }
+
+    .code-panel {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 14px; padding: 2rem;
+      backdrop-filter: blur(16px);
+      max-width: 650px; margin: 2rem auto 0;
+    }
+    .code-panel h3 { font-size: 1rem; font-weight: 600; color: var(--accent2); margin-bottom: 0.5rem; }
+    .code-panel .req { font-size: 0.85rem; color: var(--muted); margin-bottom: 1.25rem; }
+    .code-panel code {
+      display: block; background: #050510; border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 10px; padding: 1.25rem 1.5rem;
+      font-family: 'JetBrains Mono', monospace; font-size: 0.85rem;
+      color: #c4b5fd; overflow-x: auto; line-height: 1.7;
+    }
+    .code-panel code .comment { color: #5a6988; }
+
+    .settings-table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+    .settings-table th { text-align: left; color: var(--muted); font-weight: 500; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; padding: 0.75rem 1rem; border-bottom: 1px solid var(--border); }
+    .settings-table td { padding: 0.75rem 1rem; border-bottom: 1px solid var(--border); font-size: 0.9rem; }
     .settings-table th:first-child { color: var(--accent2); }
-    .footer { text-align: center; padding: 3rem 2rem; border-top: 1px solid var(--border); color: var(--muted); font-size: 0.85rem; }
-    .footer a { color: var(--accent2); text-decoration: none; }
-    .footer a:hover { text-decoration: underline; }
-    .status { display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.8rem; color: var(--success); margin-bottom: 1rem; }
-    .status-dot { width: 8px; height: 8px; background: var(--success); border-radius: 50%; animation: pulse 2s infinite; }
-    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
-    @media (max-width: 640px) {
-      section { padding: 4rem 1rem; }
-      .hero h1 { font-size: 2.25rem; }
+    .table-wrap {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 14px; padding: 0.5rem;
+      backdrop-filter: blur(16px);
+      max-width: 700px; margin: 0 auto;
+    }
+
+    footer {
+      position: relative; z-index: 1;
+      text-align: center; padding: 3rem 2rem;
+      border-top: 1px solid var(--border);
+      color: var(--muted); font-size: 0.85rem;
+      backdrop-filter: blur(16px);
+      background: rgba(10, 10, 20, 0.6);
+    }
+    footer a { color: var(--accent2); text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: #1e1e3a; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #2a2a4a; }
+
+    @media (max-width: 768px) {
+      section { padding: 3rem 1rem; }
+      .hero h1 { font-size: 2.5rem; }
     }
   </style>
 </head>
 <body>
 
-  <section class="hero">
-    <div class="hero-content">
-      <div class="hero-icon">🎙️</div>
-      <h1>Voice to Text</h1>
-      <p class="tagline">Speak naturally. Type instantly. No accounts, no subscriptions — just your voice controlling your keyboard.</p>
-      <div style="display:flex;align-items:center;justify-content:center;gap:0.5rem;margin-bottom:1.5rem;">
-        <span class="status-dot"></span> <span style="color:var(--muted);font-size:0.85rem;">v2.0 · Windows 10/11</span>
-      </div>
-      <div class="btn-group">
-        <a href="https://github.com/jlaiii/VTT" class="btn btn-primary">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.3 3.438 9.8 8.205 11.387.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.73.083-.73 1.205.085 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.418-1.305.762-1.604-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 21.795 24 17.295 24 12 24 5.37 18.63 0 12 0z"/></svg>
-          View on GitHub
-        </a>
-        <a href="#install" class="btn btn-secondary">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-          Quick Start
-        </a>
-      </div>
-    </div>
-  </section>
+<canvas id="bgCanvas"></canvas>
 
-  <section id="features">
-    <h2>Everything You Need</h2>
-    <div class="features">
-      <div class="feature-card">
-        <span class="feature-icon">⚡</span>
-        <h3>Real-Time Typing</h3>
-        <p>Speak naturally and watch your words appear instantly in any application. Low-latency audio pipeline with 16kHz capture.</p>
-      </div>
-      <div class="feature-card">
-        <span class="feature-icon">🧠</span>
-        <h3>Smart Deduplication</h3>
-        <p>d​ifflib-powered sequence matching filters repeated words, stutters, and false positives for clean transcription.</p>
-      </div>
-      <div class="feature-card">
-        <span class="feature-icon">⌨️</span>
-        <h3>Custom Hotkeys</h3>
-        <p>Bind any keyboard shortcut to toggle voice recognition on/off. Record your combo with a single click.</p>
-      </div>
-      <div class="feature-card">
-        <span class="feature-icon">🎚️</span>
-        <h3>Fine-Grained Control</h3>
-        <p>Adjust typing speed, mic sensitivity, auto-enter delay, and idle auto-stop to match your workflow.</p>
-      </div>
-      <div class="feature-card">
-        <span class="feature-icon">🚀</span>
-        <h3>Zero-Setup Launch</h3>
-        <p>Auto-installs missing pip packages on first run. Double-click <code>VTT.pyw</code> — no console, no config files needed.</p>
-      </div>
-      <div class="feature-card">
-        <span class="feature-icon">🔍</span>
-        <h3>System Diagnostics</h3>
-        <p>Built-in log viewer shows every dependency check, audio device scan, and recognition event for easy troubleshooting.</p>
-      </div>
+<section class="hero">
+  <div class="hero-content">
+    <div class="hero-badge"><span class="dot"></span>v2.0 &middot; Powered by Google Speech API</div>
+    <h1>Voice to Text<span class="highlight">.</span><br>Talk and it types<span class="highlight">.</span></h1>
+    <p>Real-time speech recognition that converts your voice into keystrokes in any application. No accounts, no subscriptions, just your microphone.</p>
+    <div class="btn-group">
+      <a href="https://github.com/jlaiii/VTT" class="btn btn-primary">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.3 3.438 9.8 8.205 11.387.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.73.083-.73 1.205.085 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.418-1.305.762-1.604-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 21.795 24 17.295 24 12 24 5.37 18.63 0 12 0z"/></svg>
+        View on GitHub
+      </a>
+      <a href="#install" class="btn btn-outline">
+        Quick Start
+      </a>
     </div>
-  </section>
+  </div>
+</section>
 
-  <section id="install">
-    <h2>Get Started in 30 Seconds</h2>
-    <div class="install">
-      <h3 style="color:var(--accent2);margin-bottom:0.5rem;">Requirements</h3>
-      <p style="color:var(--muted);margin-bottom:1.5rem;">Windows 10/11 &middot; Python 3.10+ &middot; A working microphone</p>
-      <code>
-        <span class="comment"># 1. Clone and enter</span><br>
-        git clone https://github.com/jlaiii/VTT.git<br>
-        cd VTT<br><br>
-        <span class="comment"># 2. Install dependencies (or skip — VTT auto-installs)</span><br>
-        pip install -r requirements.txt<br><br>
-        <span class="comment"># 3. Run!</span><br>
-        python VTT.pyw
-      </code>
-      <p style="margin-top:1.25rem;color:var(--muted);font-size:0.85rem;">💡 <strong>Pro tip:</strong> Double-click <code>VTT.pyw</code> to launch silently — no console window appears.</p>
-    </div>
-  </section>
-
-  <section id="settings">
-    <h2>Configuration</h2>
-    <div class="install">
-      <table class="settings-table">
-        <tr><th>Setting</th><th>What it does</th></tr>
-        <tr><td>Typing Speed</td><td>Delay between keystrokes (0.0s – 0.1s)</td></tr>
-        <tr><td>Mic Sensitivity</td><td>Adjust for quiet rooms vs noisy environments</td></tr>
-        <tr><td>Auto-Enter Delay</td><td>Wait time before auto-pressing Enter (3s – 1min)</td></tr>
-        <tr><td>Idle Auto-Stop</td><td>Auto-shutoff if no speech detected (10s – Never)</td></tr>
-        <tr><td>Always on Top</td><td>Keep VTT floating above all other windows</td></tr>
-        <tr><td>Toggle Hotkey</td><td>Keyboard shortcut to start/stop the engine</td></tr>
-      </table>
-    </div>
-  </section>
-
-  <section id="how">
-    <h2>How It Works</h2>
-    <div class="features">
-      <div class="feature-card">
-        <span class="feature-icon">🎧</span>
-        <h3>Audio Capture</h3>
-        <p>Streams microphone input at 16kHz into a ring buffer using sounddevice/PortAudio.</p>
+<section id="features">
+  <div class="section-label">Capabilities</div>
+  <h2>Everything you need to type hands-free</h2>
+  <div class="features">
+    <div class="feature-card">
+      <div class="card-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="2" stroke-linecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
       </div>
-      <div class="feature-card">
-        <span class="feature-icon">🤖</span>
-        <h3>Speech Recognition</h3>
-        <p>Feeds 1.8-second audio windows to Google's Web Speech API with 0.6s overlap for continuous flow.</p>
-      </div>
-      <div class="feature-card">
-        <span class="feature-icon">📝</span>
-        <h3>Clean & Type</h3>
-        <p>Deduplicates, formats, and injects text as native keystrokes via PyAutoGUI.</p>
-      </div>
+      <h3>Real-Time Transcription</h3>
+      <p>Streams microphone input at 16kHz through Google's Web Speech API. 1.8-second audio windows with 0.6s overlap for continuous flow.</p>
     </div>
-  </section>
+    <div class="feature-card">
+      <div class="card-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="2" stroke-linecap="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+      </div>
+      <h3>Smart Deduplication</h3>
+      <p>difflib-powered sequence matching filters out repeated words, stutters, and false positives before injecting text — clean output every time.</p>
+    </div>
+    <div class="feature-card">
+      <div class="card-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="2" stroke-linecap="round"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2"/></svg>
+      </div>
+      <h3>Custom Hotkeys</h3>
+      <p>Bind any keyboard shortcut to toggle voice recognition on or off. Record your combo with a single click in the settings panel.</p>
+    </div>
+    <div class="feature-card">
+      <div class="card-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="2" stroke-linecap="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="2" y1="14" x2="6" y2="14"/><line x1="10" y1="8" x2="14" y2="8"/><line x1="18" y1="16" x2="22" y2="16"/></svg>
+      </div>
+      <h3>Fine-Grained Control</h3>
+      <p>Adjust typing speed, microphone sensitivity, auto-enter delay, and idle auto-stop to match your workflow and environment.</p>
+    </div>
+    <div class="feature-card">
+      <div class="card-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="2" stroke-linecap="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      </div>
+      <h3>Auto-Enter</h3>
+      <p>Configurable auto-submit presses Enter after a silence window — customizable from 3 seconds to 1 minute.</p>
+    </div>
+    <div class="feature-card">
+      <div class="card-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="2" stroke-linecap="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+      </div>
+      <h3>Zero-Setup Launch</h3>
+      <p>Auto-installs all missing dependencies on first run — customtkinter, PyAudio, NumPy, SciPy, and more. Double-click VTT.pyw and go.</p>
+    </div>
+  </div>
+</section>
 
-  <footer class="footer">
-    <p>Built with ♥ by <a href="https://github.com/jlaiii">jlaiii</a> · <a href="https://github.com/jlaiii/VTT">GitHub</a></p>
-    <p style="margin-top:0.5rem;">Powered by Google Speech Recognition · Python · customtkinter · PyAutoGUI · NumPy · SciPy</p>
-  </footer>
+<section id="settings">
+  <div class="section-label">Configuration</div>
+  <h2>Control every aspect of your experience</h2>
+  <div class="table-wrap">
+    <table class="settings-table">
+      <tr><th>Setting</th><th>Description</th></tr>
+      <tr><td>Typing Speed</td><td>Delay between keystroke injections (0.0s - 0.1s)</td></tr>
+      <tr><td>Mic Sensitivity</td><td>Energy threshold for Google recognizer — Low, Medium, or High</td></tr>
+      <tr><td>Auto-Enter Delay</td><td>Silence duration before auto-pressing Enter (3s - 1min)</td></tr>
+      <tr><td>Idle Auto-Stop</td><td>Engine deactivation after inactivity (10s - Never)</td></tr>
+      <tr><td>Always on Top</td><td>Keep the VTT window floating above all other windows</td></tr>
+      <tr><td>Toggle Hotkey</td><td>Keyboard shortcut to start or stop the voice engine</td></tr>
+    </table>
+  </div>
+</section>
+
+<section id="how">
+  <div class="section-label">Architecture</div>
+  <h2>How the engine works</h2>
+  <div class="features">
+    <div class="feature-card">
+      <div class="card-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="2" stroke-linecap="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/></svg>
+      </div>
+      <h3>Audio Capture</h3>
+      <p>sounddevice streams microphone input at 16kHz into a ring buffer using PortAudio for low-latency signal acquisition.</p>
+    </div>
+    <div class="feature-card">
+      <div class="card-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="2" stroke-linecap="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+      </div>
+      <h3>Speech Recognition</h3>
+      <p>SpeechRecognition sends 1.8-second audio windows to Google's Web Speech API. Multi-threaded to keep the UI responsive.</p>
+    </div>
+    <div class="feature-card">
+      <div class="card-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="2" stroke-linecap="round"><polyline points="4 7 11 14 20 5"/></svg>
+      </div>
+      <h3>Type & Clean</h3>
+      <p>PyAutoGUI injects deduplicated text as native keystrokes into the active application. Clean, fast, and seamless.</p>
+    </div>
+  </div>
+</section>
+
+<section id="install">
+  <div class="section-label">Get Started</div>
+  <h2>Down and running in seconds</h2>
+  <div class="code-panel">
+    <h3>Requirements</h3>
+    <p class="req">Windows 10/11 &middot; Python 3.10+ &middot; A working microphone</p>
+    <code>
+      <span class="comment"># Clone and enter the directory</span><br>
+      git clone https://github.com/jlaiii/VTT.git<br>
+      cd VTT<br><br>
+      <span class="comment"># Run -- dependencies auto-install on first launch</span><br>
+      python VTT.pyw<br><br>
+      <span class="comment"># Or double-click VTT.pyw for a silent launch</span>
+    </code>
+    <p style="margin-top:1.25rem;font-size:0.83rem;color:var(--muted);">Tip: Double-click VTT.pyw to launch without a console window. The app runs as a compact floating overlay.</p>
+  </div>
+</section>
+
+<footer>
+  <p>Built by <a href="https://github.com/jlaiii">jlaiii</a> &middot; <a href="https://github.com/jlaiii/VTT">GitHub</a></p>
+  <p style="margin-top:0.4rem;">Google Speech API &middot; customtkinter &middot; PyAutoGUI &middot; NumPy &middot; SciPy &middot; MIT License</p>
+</footer>
+
+<script>
+(function() {
+  var c = document.getElementById('bgCanvas');
+  var ctx = c.getContext('2d');
+  var w, h;
+  var particles = [];
+  var mouse = { x: null, y: null, r: 120 };
+  var PARTICLE_COUNT = 80;
+  var CONNECTION_DIST = 150;
+
+  function resize() {
+    w = c.width = window.innerWidth;
+    h = c.height = window.innerHeight;
+  }
+  window.addEventListener('resize', resize);
+  resize();
+
+  document.addEventListener('mousemove', function(e) {
+    mouse.x = e.clientX;
+    mouse.y = e.clientY;
+  });
+  document.addEventListener('mouseleave', function() {
+    mouse.x = null;
+    mouse.y = null;
+  });
+
+  function Particle() {
+    this.x = Math.random() * w;
+    this.y = Math.random() * h;
+    this.vx = (Math.random() - 0.5) * 0.6;
+    this.vy = (Math.random() - 0.5) * 0.6;
+    this.r = Math.random() * 1.5 + 0.5;
+    this.opacity = Math.random() * 0.5 + 0.2;
+  }
+  Particle.prototype.update = function() {
+    this.x += this.vx;
+    this.y += this.vy;
+    if (this.x < 0 || this.x > w) this.vx *= -1;
+    if (this.y < 0 || this.y > h) this.vy *= -1;
+
+    if (mouse.x !== null) {
+      var dx = this.x - mouse.x;
+      var dy = this.y - mouse.y;
+      var dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist < mouse.r) {
+        var force = (mouse.r - dist) / mouse.r;
+        var angle = Math.atan2(dy, dx);
+        this.vx += Math.cos(angle) * force * 0.3;
+        this.vy += Math.sin(angle) * force * 0.3;
+      }
+    }
+    var speed = Math.sqrt(this.vx * this.vx + this.vy * this.vy);
+    if (speed > 1.2) {
+      this.vx = (this.vx / speed) * 1.2;
+      this.vy = (this.vy / speed) * 1.2;
+    }
+  };
+
+  for (var i = 0; i < PARTICLE_COUNT; i++) {
+    particles.push(new Particle());
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, w, h);
+
+    for (var i = 0; i < particles.length; i++) {
+      var p = particles[i];
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(124, 58, 237, ' + p.opacity + ')';
+      ctx.fill();
+    }
+
+    for (var i = 0; i < particles.length; i++) {
+      for (var j = i + 1; j < particles.length; j++) {
+        var dx = particles[i].x - particles[j].x;
+        var dy = particles[i].y - particles[j].y;
+        var dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < CONNECTION_DIST) {
+          var alpha = (1 - dist / CONNECTION_DIST) * 0.12;
+          ctx.beginPath();
+          ctx.moveTo(particles[i].x, particles[i].y);
+          ctx.lineTo(particles[j].x, particles[j].y);
+          ctx.strokeStyle = 'rgba(124, 58, 237, ' + alpha + ')';
+          ctx.lineWidth = 0.5;
+          ctx.stroke();
+        }
+      }
+    }
+  }
+
+  function loop() {
+    for (var i = 0; i < particles.length; i++) {
+      particles[i].update();
+    }
+    draw();
+    requestAnimationFrame(loop);
+  }
+  loop();
+
+  var observer = new IntersectionObserver(function(entries) {
+    entries.forEach(function(entry) {
+      if (entry.isIntersecting) {
+        entry.target.style.opacity = '1';
+        entry.target.style.transform = 'translateY(0)';
+      }
+    });
+  }, { threshold: 0.1 });
+
+  document.querySelectorAll('.feature-card, .code-panel, .table-wrap').forEach(function(el) {
+    el.style.opacity = '0';
+    el.style.transform = 'translateY(20px)';
+    el.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+    observer.observe(el);
+  });
+})();
+</script>
 
 </body>
 </html>

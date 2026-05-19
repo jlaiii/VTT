@@ -1,4 +1,4 @@
-# 🎙️ VTT — Voice to Text Engine
+# VTT — Voice to Text Engine
 
 <p align="center">
   <img src="https://img.shields.io/badge/Python-3.11-blue?style=flat&logo=python" alt="Python">
@@ -7,26 +7,26 @@
   <img src="https://img.shields.io/badge/Speech-Google_API-orange?style=flat&logo=google" alt="Google Speech">
 </p>
 
-**VTT** is a lightweight Windows desktop app that transcribes your voice into keystrokes in real time — no cloud subscriptions, no accounts, just talk and it types. Perfect for anyone who wants hands-free text input in any application.
+**VTT** is a lightweight Windows desktop app that transcribes your voice into keystrokes in real time — no cloud subscriptions, no accounts, just talk and it types. Perfect for hands-free text input in any application.
 
 > Powered by Google's Speech Recognition API. Built with performance and simplicity in mind.
 
 ---
 
-## ✨ Features
+## Features
 
 - **Real-time voice typing** — speak naturally and watch words appear wherever your cursor is
-- **Smart deduplication** — filters out repeated words and stutters automatically
-- **Auto-Enter** — configurable delay to press Enter after you finish speaking
+- **Smart deduplication** — filters out repeated words and stutters automatically via difflib sequence matching
+- **Auto-Enter** — configurable delay to press Enter after you finish speaking (3s to 1min)
 - **Always on Top** — keep VTT visible over any window
 - **Custom hotkeys** — bind any key combo to toggle the engine on/off
 - **Auto-pip install** — missing dependencies are installed automatically on first launch
-- **Detailed system logs** — full diagnostics for troubleshooting
+- **Detailed system logs** — full diagnostics for troubleshooting: startup checks, audio device scans, dependency verification
 - **Persistent settings** — everything saves between sessions
 
 ---
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Requirements
 
@@ -39,43 +39,42 @@
 ```bash
 git clone https://github.com/jlaiii/VTT.git
 cd VTT
-pip install -r requirements.txt
 python VTT.pyw
 ```
 
-> **No pip install?** VTT auto-installs missing packages on first run — just launch `VTT.pyw` and it handles the rest.
+> VTT auto-installs missing packages on first run — just launch `VTT.pyw` and it handles the rest.
 
 Double-click `VTT.pyw` to launch silently (no console window). The app runs as a compact floating window.
 
 ---
 
-## ⚙️ Settings
+## Settings
 
 | Setting | Description |
 |---|---|
-| **Typing Speed** | Delay between injected keystrokes (`0.0s` to `0.1s`) |
-| **Mic Sensitivity** | Adjust for quiet rooms vs noisy environments (`Low`/`Medium`/`High`) |
-| **Auto-Enter Delay** | Wait time before auto-pressing Enter (`3s` to `1m`) |
-| **Idle Auto-Stop** | Auto-shutoff if no speech detected (`10s` to `Never`) |
+| **Typing Speed** | Delay between injected keystrokes (0.0s - 0.1s) |
+| **Mic Sensitivity** | Adjust for quiet rooms vs noisy environments (Low/Medium/High) |
+| **Auto-Enter Delay** | Wait time before auto-pressing Enter (3s - 1min) |
+| **Idle Auto-Stop** | Auto-shutoff if no speech detected (10s - Never) |
 | **Always on Top** | Keep VTT above all other windows |
 | **Toggle Hotkey** | Bind a keyboard shortcut to start/stop the engine |
 
 ---
 
-## 🔧 Tech Stack
+## Tech Stack
 
 ```
-customtkinter    → Modern dark-themed GUI
-SpeechRecognition → Google Web Speech API integration
-PyAudio/PortAudio → Low-latency microphone capture via sounddevice
-NumPy + SciPy    → Audio signal processing
-PyAutoGUI        → OS-level keystroke injection
-keyboard         → Global hotkey registration
+customtkinter    -> Modern dark-themed GUI
+SpeechRecognition -> Google Web Speech API integration
+sounddevice      -> Low-latency microphone capture via PortAudio
+NumPy + SciPy    -> Audio signal processing
+PyAutoGUI        -> OS-level keystroke injection
+keyboard         -> Global hotkey registration
 ```
 
 ---
 
-## 🏗️ How It Works
+## How It Works
 
 VTT uses a multi-threaded architecture:
 
@@ -88,42 +87,34 @@ The UI remains responsive because all heavy work runs on background daemon threa
 
 ---
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 VTT/
-├── VTT.pyw              # Main application (double-click to run)
-├── vtt_settings.json     # Auto-generated user preferences
-└── README.md
+|-- VTT.pyw              # Main application (double-click to run)
+|-- requirements.txt     # Dependencies
+|-- vtt_settings.json    # Auto-generated user preferences
+|-- docs/
+|   |-- index.html       # GitHub Pages website
 ```
 
 ---
 
-## 🛠️ Development
-
-```bash
-# Install dev dependencies
-pip install -r requirements.txt
-
-# Run (debug console)
-python VTT.pyw
-```
-
-To compile to a standalone `.exe`:
+## Build to EXE
 
 ```bash
 pip install pyinstaller
-pyinstaller --noconsole --onefile --icon="icon.ico" VTT.pyw
+pyinstaller --noconsole --onefile VTT.pyw
 ```
 
 ---
 
-## 🤝 Contributing
+## Contributing
 
 Found a bug or have an idea? Open an [issue](https://github.com/jlaiii/VTT/issues) or submit a pull request.
 
 ---
 
 <div align="center">
-  <sub>Made with ❤️ by <a href="https://github.com/jlaiii">jlaiii</a></sub>
+  <sub>Built by <a href="https://github.com/jlaiii">jlaiii</a> &middot; <a href="https://jlaiii.github.io/VTT/">Website</a></sub>
 </div>
