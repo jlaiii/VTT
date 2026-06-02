@@ -1,0 +1,7 @@
+logs.txt
+vtt_settings.json
+.vtt_deps_ok
+crash_log.txt
+__pycache__/
+*.pyc
+*temp*.bat

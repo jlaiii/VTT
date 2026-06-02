@@ -1,120 +1,92 @@
-# VTT — Voice to Text Engine
+# VTT — Voice to Text
 
-<p align="center">
-  <img src="https://img.shields.io/badge/Python-3.11-blue?style=flat&logo=python" alt="Python">
-  <img src="https://img.shields.io/badge/Platform-Windows-0078D6?style=flat&logo=windows" alt="Windows">
-  <img src="https://img.shields.io/badge/License-MIT-green?style=flat" alt="MIT">
-  <img src="https://img.shields.io/badge/Speech-Google_API-orange?style=flat&logo=google" alt="Google Speech">
-</p>
-
-**VTT** is a lightweight Windows desktop app that transcribes your voice into keystrokes in real time — no cloud subscriptions, no accounts, just talk and it types. Perfect for hands-free text input in any application.
-
-> Powered by Google's Speech Recognition API. Built with performance and simplicity in mind.
-
----
+Real-time speech-to-text dictation for any Windows application. Speak into your mic, text appears wherever your cursor is.
 
 ## Features
 
-- **Real-time voice typing** — speak naturally and watch words appear wherever your cursor is
-- **Smart deduplication** — filters out repeated words and stutters automatically via difflib sequence matching
-- **Auto-Enter** — configurable delay to press Enter after you finish speaking (3s to 1min)
-- **Always on Top** — keep VTT visible over any window
-- **Custom hotkeys** — bind any key combo to toggle the engine on/off
-- **Auto-pip install** — missing dependencies are installed automatically on first launch
-- **Detailed system logs** — full diagnostics for troubleshooting: startup checks, audio device scans, dependency verification
-- **Persistent settings** — everything saves between sessions
-
----
+- **Two speech engines**: Google Speech Recognition (fast, online) and Whisper (local, offline)
+- **Real-time typing** — speaks through your mic, types into any app (terminal, editor, browser)
+- **Wake word** — say "hey vtt" to activate hands-free
+- **Hotkey toggle** — bind a key combo to start/stop
+- **Auto-enter** — presses Enter after a configurable silence delay
+- **Idle auto-stop** — engine shuts off after inactivity
+- **Always on top** — keep the window visible
+- **System logs** — everything is logged to `logs.txt`
 
 ## Quick Start
 
-### Requirements
+### Option 1: One-Click Launcher (recommended)
 
-- **Windows 10/11**
-- **Python 3.10+** — [Download](https://python.org/downloads)
-- A microphone
+Double-click **`start.bat`**. It finds Python, installs missing packages, and launches VTT — zero config.
 
-### Install & Run
+### Option 2: Manual
 
 ```bash
-git clone https://github.com/jlaiii/VTT.git
-cd VTT
-python VTT.pyw
+# Install dependencies
+pip install customtkinter SpeechRecognition PyAutoGUI sounddevice numpy scipy keyboard
+
+# (Optional) For offline Whisper engine
+pip install faster-whisper
+
+# Launch
+pythonw VTT.pyw
 ```
 
-> VTT auto-installs missing packages on first run — just launch `VTT.pyw` and it handles the rest.
+## Requirements
 
-Double-click `VTT.pyw` to launch silently (no console window). The app runs as a compact floating window.
-
----
+| Package | Purpose |
+|---------|---------|
+| `customtkinter` | GUI |
+| `SpeechRecognition` | Google STT engine |
+| `PyAutoGUI` | Typing into windows |
+| `sounddevice` | Audio capture |
+| `numpy`, `scipy` | Audio processing |
+| `keyboard` | Global hotkeys |
+| `faster-whisper` | Local Whisper engine *(optional)* |
 
 ## Settings
 
-| Setting | Description |
-|---|---|
-| **Typing Speed** | Delay between injected keystrokes (0.0s - 0.1s) |
-| **Mic Sensitivity** | Adjust for quiet rooms vs noisy environments (Low/Medium/High) |
-| **Auto-Enter Delay** | Wait time before auto-pressing Enter (3s - 1min) |
-| **Idle Auto-Stop** | Auto-shutoff if no speech detected (10s - Never) |
-| **Always on Top** | Keep VTT above all other windows |
-| **Toggle Hotkey** | Bind a keyboard shortcut to start/stop the engine |
+| Setting | Options | Description |
+|---------|---------|-------------|
+| Typing Speed | 0.0s – 0.1s | Delay between keystrokes |
+| Mic Sensitivity | High / Medium / Low | Audio threshold |
+| Speech Engine | Google / Whisper | Recognition backend |
+| Whisper Model | tiny → turbo | Local model size (VRAM tradeoff) |
+| VAD Silence | 1.0s – 2.0s | Pause before utterance ends |
+| Auto-Enter Delay | 3s – 1m | Silence before Enter is pressed |
+| Idle Auto-Stop | 10s – Never | Auto-shutoff after inactivity |
+| Always on Top | yes/no | Keep window visible |
+| Toggle Hotkey | e.g. ctrl+shift+v | Keyboard shortcut |
+| Wake Word | e.g. "hey vtt" | Voice activation phrase |
 
----
+## Whisper Models
 
-## Tech Stack
+| Model | Params | VRAM | Speed | Best for |
+|-------|--------|------|-------|----------|
+| tiny | 39M | ~1 GB | ~10x | Edge / low-memory |
+| base | 74M | ~1 GB | ~7x | Balanced (default) |
+| small | 244M | ~2 GB | ~4x | Better accuracy |
+| medium | 769M | ~5 GB | ~2x | Production quality |
+| large | 1550M | ~10 GB | 1x | Max accuracy |
+| turbo | 809M | ~6 GB | ~8x | Fast + accurate ★ |
 
-```
-customtkinter    -> Modern dark-themed GUI
-SpeechRecognition -> Google Web Speech API integration
-sounddevice      -> Low-latency microphone capture via PortAudio
-NumPy + SciPy    -> Audio signal processing
-PyAutoGUI        -> OS-level keystroke injection
-keyboard         -> Global hotkey registration
-```
+*Whisper runs entirely offline. Your audio never leaves your machine.*
 
----
-
-## How It Works
-
-VTT uses a multi-threaded architecture:
-
-1. **Audio Capture** — streams mic input at 16kHz into a ring buffer
-2. **Speech Processing** — feeds 1.8s audio windows to Google's recognition API with 0.6s overlap for continuity
-3. **Deduplication** — difflib sequence matching filters already-sent words
-4. **Keystroke Injection** — PyAutoGUI types cleaned text into the active window
-
-The UI remains responsive because all heavy work runs on background daemon threads.
-
----
-
-## Project Structure
+## Project Files
 
 ```
-VTT/
-|-- VTT.pyw              # Main application (double-click to run)
-|-- requirements.txt     # Dependencies
-|-- vtt_settings.json    # Auto-generated user preferences
-|-- docs/
-|   |-- index.html       # GitHub Pages website
+VoiceToText/
+├── VTT.pyw              Main application
+├── start.bat            One-click launcher
+├── vtt_settings.json    User settings (auto-created)
+├── logs.txt             Session logs (auto-created)
+└── README.md            This file
 ```
 
----
+## Logs
 
-## Build to EXE
+Every session appends to `logs.txt` — startup checks, engine toggles, transcribed text, errors, and wake word detections. Open it from the Settings → LOGS → OPEN LOGS FILE button.
 
-```bash
-pip install pyinstaller
-pyinstaller --noconsole --onefile VTT.pyw
-```
+## Credits
 
----
-
-## Contributing
-
-Found a bug or have an idea? Open an [issue](https://github.com/jlaiii/VTT/issues) or submit a pull request.
-
----
-
-<div align="center">
-  <sub>Built by <a href="https://github.com/jlaiii">jlaiii</a> &middot; <a href="https://jlaiii.github.io/VTT/">Website</a></sub>
-</div>
+by [jlaiii](https://github.com/jlaiii/VTT)
